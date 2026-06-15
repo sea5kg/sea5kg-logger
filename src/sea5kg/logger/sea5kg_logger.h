@@ -37,49 +37,47 @@
 
 #include <string>
 #include <vector>
-// #include <map>
-#include <mutex>
-#include <deque>
 
 namespace sea5kg {
 
-class Config {
+class logger {
 public:
-  Config();
-  void doLogRotateUpdateFilename(bool bForce = false);
-  std::mutex logMutex;
-  std::string logDir;
-  std::string logPrefixFile;
-  std::string logFile;
-  bool enableLogFile;
-  long logStartTime;
-  long logRotationPeriodInSeconds;
-  std::deque<std::string> logLastMessages;
+  static logger *create();
+  virtual void set_log_dirpath(const std::string &log_dir) = 0;
+  virtual const std::string &get_log_dirpath() = 0;
+  virtual void set_log_filename_prefix(const std::string &prefix) = 0;
+  virtual const std::string &get_log_file_fullpath() = 0;
+  virtual void set_rotation_period_in_seconds(int val_in_seconds) = 0;
+  virtual int get_rotation_period_in_seconds() = 0;
+  virtual void set_enable_log_file(bool val) = 0;
+  virtual bool enable_log_file() = 0;
+  virtual void set_enable_console_output(bool val) = 0;
+  virtual bool enable_console_output() = 0;
+  virtual void debug(const std::string &tag, const std::string &message) = 0;
+  virtual void info(const std::string &tag, const std::string &message) = 0;
+  virtual void err(const std::string &tag, const std::string &message) = 0;
+  virtual void throw_err(const std::string &tag, const std::string &message) = 0;
+  virtual void warn(const std::string &tag, const std::string &message) = 0;
+  virtual void ok(const std::string &tag, const std::string &message) = 0;
+  virtual std::vector<std::string> last_log_messages() = 0;
 };
 
-class Global {
+class log {
 public:
-  Global();
-  std::vector<Config *> logs;
-private:
-  int m_logVectorSize;
-};
-
-class Log {
-public:
-  static Global g_GLOBAL;
-
-  static void debug(const std::string &sTag, const std::string &sMessage);
-  static void info(const std::string &sTag, const std::string &sMessage);
-  static void err(const std::string &sTag, const std::string &sMessage);
-  static void throw_err(const std::string &sTag, const std::string &sMessage);
-  static void warn(const std::string &sTag, const std::string &sMessage);
-  static void ok(const std::string &sTag, const std::string &sMessage);
-  static std::vector<std::string> getLastLogMessages();
-  static void setLogDirectory(const std::string &sDirectoryPath);
-  static void setPrefixLogFile(const std::string &sPrefixLogFile);
-  static void setEnableLogFile(bool bEnable);
-  static void setRotationPeriodInSec(long nRotationPeriodInSec);
+  static sea5kg::logger *g_GLOBAL;
+  static void debug(const std::string &tag, const std::string &message);
+  static void info(const std::string &tag, const std::string &message);
+  static void err(const std::string &tag, const std::string &message);
+  static void throw_err(const std::string &tag, const std::string &message);
+  static void warn(const std::string &tag, const std::string &message);
+  static void ok(const std::string &tag, const std::string &message);
+  static std::vector<std::string> last_log_messages();
+  static void set_log_dirpath(const std::string &dirpath);
+  static const std::string &get_log_dirpath();
+  static void set_log_filename_prefix(const std::string &prefix);
+  static void set_enable_log_file(bool val);
+  static void set_rotation_period_in_seconds(int val_in_seconds);
+  static int get_rotation_period_in_seconds();
 };
 
 } // namespace sea5kg

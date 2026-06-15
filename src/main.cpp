@@ -30,17 +30,15 @@
 #include "sea5kg_logger.h"
 
 int main(int argc, char* argv[]) {
-    const std::string TAG = "MAIN";
-
-    sea5kg::Log::setLogDirectory(".logs");
-    sea5kg::Log::setPrefixLogFile("sea5kg_logger");
-    sea5kg::Log::setEnableLogFile(true);
-
-    sea5kg::Log::debug(TAG, "Hello info");
-    sea5kg::Log::info(TAG, "Hello info");
-    sea5kg::Log::err(TAG, "Hello err");
-    sea5kg::Log::warn(TAG, "Hello warn");
-    sea5kg::Log::ok(TAG, "Hello ok");
-
-    return 0;
+  const std::string TAG = "MAIN";
+  sea5kg::log::set_rotation_period_in_seconds(60*5);
+  sea5kg::log::set_log_dirpath(".logs/2026");
+  sea5kg::log::set_log_filename_prefix("main_");
+  sea5kg::log::set_enable_log_file(true);
+  sea5kg::log::debug(TAG, "Hello info");
+  sea5kg::log::info(TAG, "Hello info");
+  sea5kg::log::err(TAG, "Hello err");
+  sea5kg::log::warn(TAG, "Hello warn");
+  sea5kg::log::ok(TAG, "Hello ok");
+  return 0;
 }

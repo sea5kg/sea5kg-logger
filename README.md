@@ -21,32 +21,31 @@ Or include files:
 * `src/sea5kg/logger/sea5kg_logger.h`
 * `src/sea5kg/logger/sea5kg_logger.cpp`
 
-## Logger (sea5kg::Log)
+## Logger (sea5kg::log)
 
 * Output will be colored for console, but color will be missing for files.
 * Functions are safe thread.
 * Logger supports a log rotation (every 51000 seconds / every day)
-* sea5kg::Log::throw_err - will be generate `throw std::runtime_error(sMessage);`
-* std::vector<std::string> sea5kg::Log::getLastLogMessages() - last 50 records from log
+* sea5kg::log::throw_err - will be generate `throw std::runtime_error(sMessage);`
+* `std::vector<std::string> sea5kg::log::getLastLogMessages()` - last 50 records from log
 
 To init logger first and enable.
 
 ```
-#include <wsjcpp_logger.h>
+#include <sea5kg_logger.h>
 
 int main(int argc, char* argv[]) {
-    std::string TAG = "MAIN";
-    sea5kg::Log::setLogDirectory(".logs");
-    sea5kg::Log::setPrefixLogFile("app");
-    sea5kg::Log::setEnableLogFile(true);
-
-    sea5kg::Log::debug(TAG, "Hello info");
-    sea5kg::Log::info(TAG, "Hello info");
-    sea5kg::Log::err(TAG, "Hello err");
-    sea5kg::Log::warn(TAG, "Hello warn");
-    sea5kg::Log::ok(TAG, "Hello ok");
-
-    return 0;
+  std::string TAG = "MAIN";
+  sea5kg::log::set_rotation_period_in_seconds(60*5);
+  sea5kg::log::set_log_dirpath(".logs/2026");
+  sea5kg::log::set_log_filename_prefix("main_");
+  sea5kg::log::set_enable_log_file(true);
+  sea5kg::log::debug(TAG, "Hello info");
+  sea5kg::log::info(TAG, "Hello info");
+  sea5kg::log::err(TAG, "Hello err");
+  sea5kg::log::warn(TAG, "Hello warn");
+  sea5kg::log::ok(TAG, "Hello ok");
+  return 0;
 }
 ```
 

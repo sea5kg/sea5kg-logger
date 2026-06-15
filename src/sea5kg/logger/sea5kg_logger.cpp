@@ -43,21 +43,23 @@
 #include <fstream>
 #include <thread>
 #include <iomanip> // std::setw
+#include <mutex>
+#include <deque>
 
 namespace sea5kg {
 
-long getCurrentTimeInMilliseconds() {
+long _current_time_in_milliseconds() {
   long nTimeStart = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   return nTimeStart;
 }
 
-long getCurrentTimeInSeconds() {
+long _current_time_in_seconds() {
   long nTimeStart = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   return nTimeStart;
 }
 
-std::string getCurrentTimeForLogFormat() {
-  long nTimeStart = getCurrentTimeInMilliseconds();
+std::string _current_time_for_log_format() {
+  long nTimeStart = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   std::string sMilliseconds = std::to_string(int(nTimeStart % 1000));
   nTimeStart = nTimeStart / 1000;
 
@@ -72,7 +74,7 @@ std::string getCurrentTimeForLogFormat() {
   return std::string(buf) + "." + std::string( 3 - sMilliseconds.length(), '0').append(sMilliseconds);
 }
 
-std::string getThreadId() {
+std::string _get_thread_id() {
   static_assert(sizeof(std::thread::id)==sizeof(uint64_t),"this function only works if size of thead::id is equal to the size of uint_64");
   std::thread::id this_id = std::this_thread::get_id();
   uint64_t val = *((uint64_t*) &this_id);
@@ -81,7 +83,7 @@ std::string getThreadId() {
   return std::string(stream.str());
 }
 
-std::string formatTimeForFilename(long nTimeInSec) {
+std::string _format_time_for_filename(long nTimeInSec) {
   std::time_t tm_ = long(nTimeInSec);
   // struct tm tstruct = *localtime(&tm_);
   struct tm tstruct;
@@ -94,7 +96,7 @@ std::string formatTimeForFilename(long nTimeInSec) {
   return std::string(buf);
 }
 
-bool dirExists(const std::string &sDirname) {
+bool _dir_exists(const std::string &sDirname) {
   struct stat st;
   bool bExists = (stat(sDirname.c_str(), &st) == 0);
   if (bExists) {
@@ -103,179 +105,285 @@ bool dirExists(const std::string &sDirname) {
   return false;
 }
 
-bool makeDir(const std::string &sDirname) {
+bool _make_dir(const std::string &dir_name) {
   struct stat st;
 
-  // const std::filesystem::path dir{sDirname};
+  // const std::filesystem::path dir{dir_name};
   // std::filesystem::create_directory(dir);
 
-  int nStatus = mkdir(sDirname.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  int nStatus = mkdir(dir_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   if (nStatus == 0) {
     return true;
   }
   if (nStatus == EACCES) {
-    std::cout << "FAILED create folder " << sDirname << std::endl;
+    std::cout << "FAILED create folder " << dir_name << std::endl;
     return false;
   }
-  // std::cout << "nStatus: " << nStatus << std::endl;
   return true;
 }
 
-enum ColorCode {
-  FG_RED      = 31,
-  FG_GREEN    = 32,
-  FG_YELLOW   = 93,
-  FG_BLUE     = 34,
-  FG_CYAN     = 36,
-  FG_DEFAULT  = 39,
-  BG_RED      = 41,
-  BG_GREEN    = 42,
-  BG_BLUE     = 44,
-  BG_CYAN     = 46,
-  BG_DEFAULT  = 49
+enum class color_code {
+  FG_0 = 0,
+  FG_GRAY = 2,
+  FG_RED = 31,
+  FG_GREEN = 32,
+  FG_BLUE = 34,
+  FG_CYAN = 36,
+  FG_DEFAULT = 39,
+  FG_YELLOW = 93,
+  BG_RED = 41,
+  BG_GREEN = 42,
+  BG_BLUE = 44,
+  BG_CYAN = 46,
+  BG_DEFAULT = 49
 };
 
-class ColorModifier {
+class color_modifier {
 public:
-  ColorModifier(ColorCode pCode) : code(pCode) {}
-  friend std::ostream&
-  operator<<(std::ostream& os, const ColorModifier& mod) {
-      return os << "\033[" << mod.code << "m";
+  color_modifier(color_code _code) : code(_code) {}
+  friend std::ostream &operator<<(std::ostream& os, const color_modifier &mod) {
+    os << "\033[" << int(mod.code) << "m";
+    return os;
   }
-  // ColorModifier green = ColorModifier(ColorCode::FG_GREEN);
 private:
-  ColorCode code;
+  color_code code;
 };
 
-// ---------------------------------------------------------------------
-// Config
+static sea5kg::color_modifier COLOR_DEFAULT(sea5kg::color_code::FG_0);
+static sea5kg::color_modifier COLOR_YELLOW(sea5kg::color_code::FG_YELLOW);
+static sea5kg::color_modifier COLOR_RED(sea5kg::color_code::FG_RED);
+static sea5kg::color_modifier COLOR_GRAY(sea5kg::color_code::FG_GRAY);
+static sea5kg::color_modifier COLOR_GREEN(sea5kg::color_code::FG_GREEN);
 
-Config::Config() {
-  logDir = "./";
-  logPrefixFile = "";
-  logFile = "";
-  enableLogFile = false;
-  logStartTime = 0;
-  logRotationPeriodInSeconds = 51000;
+class private_logger_impl : public logger {
+public:
+  private_logger_impl();
+  virtual void set_log_dirpath(const std::string &log_dir) override;
+  virtual const std::string &get_log_dirpath() override;
+  virtual void set_log_filename_prefix(const std::string &prefix) override;
+  virtual const std::string &get_log_file_fullpath() override;
+  virtual void set_rotation_period_in_seconds(int val_in_seconds) override;
+  virtual int get_rotation_period_in_seconds() override;
+  virtual void set_enable_log_file(bool val) override;
+  virtual bool enable_log_file() override;
+  virtual void set_enable_console_output(bool val) override;
+  virtual bool enable_console_output() override;
+  virtual void debug(const std::string &tag, const std::string &message) override;
+  virtual void info(const std::string &tag, const std::string &message) override;
+  virtual void err(const std::string &tag, const std::string &message) override;
+  virtual void throw_err(const std::string &tag, const std::string &message) override;
+  virtual void warn(const std::string &tag, const std::string &message) override;
+  virtual void ok(const std::string &tag, const std::string &message) override;
+  virtual std::vector<std::string> last_log_messages() override;
+
+private:
+  void do_log_rotate_update_filename(bool force = false);
+  void add(color_modifier &clr, const std::string &type, const std::string &tag, const std::string &message);
+
+  std::mutex m_mutex;
+  std::string m_log_dir;
+  std::string m_log_file_name_prefix;
+  std::string m_log_file_fullpath;
+  bool m_enable_log_file;
+  bool m_enable_console_output;
+  long m_log_start_time;
+  int m_rotation_period_in_seconds;
+  std::deque<std::string> m_log_last_messages;
+};
+
+private_logger_impl::private_logger_impl() {
+  m_log_dir = "./";
+  m_log_file_name_prefix = "";
+  m_log_file_fullpath = "";
+  m_enable_log_file = false;
+  m_enable_console_output = true;
+  m_log_start_time = 0;
+  m_rotation_period_in_seconds = 86400; // 24h
 }
 
-void Config::doLogRotateUpdateFilename(bool bForce) {
-  long t = getCurrentTimeInSeconds();
-  long nEverySeconds = logRotationPeriodInSeconds; // rotate log if started now or if time left more then 1 day
-  if (logStartTime == 0 || t - logStartTime > nEverySeconds || bForce) {
-    logStartTime = t;
-    logFile = logDir + "/"
-      + logPrefixFile + "_"
-      + formatTimeForFilename(logStartTime) + ".log";
+void private_logger_impl::set_log_dirpath(const std::string &log_dir) {
+  m_log_dir = log_dir;
+  if (m_enable_log_file) {
+    if (!_dir_exists(m_log_dir)) {
+      if (!_make_dir(m_log_dir)) {
+        log::throw_err("set_log_dirpath", "Could not create log directory '" + m_log_dir + "'");
+      }
+    }
+  }
+  do_log_rotate_update_filename(true);
+}
+
+const std::string &private_logger_impl::get_log_dirpath() {
+  return m_log_dir;
+}
+
+void private_logger_impl::set_log_filename_prefix(const std::string &prefix) {
+  m_log_file_name_prefix = prefix;
+  do_log_rotate_update_filename(true);
+}
+
+const std::string &private_logger_impl::get_log_file_fullpath() {
+  return m_log_file_fullpath;
+}
+
+void private_logger_impl::set_rotation_period_in_seconds(int val_in_seconds) {
+  m_rotation_period_in_seconds = val_in_seconds;
+}
+
+int private_logger_impl::get_rotation_period_in_seconds() {
+  return m_rotation_period_in_seconds;
+}
+
+void private_logger_impl::set_enable_log_file(bool val) {
+  m_enable_log_file = val;
+  // make a log dir
+  if (m_enable_log_file) {
+    if (!_dir_exists(m_log_dir)) {
+      if (!_make_dir(m_log_dir)) {
+        log::throw_err("set_enable_log_file", "Could not create log directory '" + m_log_dir + "'");
+      }
+    }
+  }
+  do_log_rotate_update_filename(true);
+}
+
+bool private_logger_impl::enable_log_file() {
+  return m_enable_log_file;
+}
+
+void private_logger_impl::set_enable_console_output(bool val) {
+  m_enable_console_output = val;
+}
+
+bool private_logger_impl::enable_console_output() {
+  return m_enable_console_output;
+}
+
+void private_logger_impl::debug(const std::string &tag, const std::string &message) {
+  add(COLOR_GRAY, "DEBUG", tag, message);
+}
+
+void private_logger_impl::info(const std::string &tag, const std::string &message) {
+  add(COLOR_DEFAULT, "INFO", tag, message);
+}
+
+void private_logger_impl::err(const std::string &tag, const std::string &message) {
+  add(COLOR_RED, "ERR", tag, message);
+}
+
+void private_logger_impl::throw_err(const std::string &tag, const std::string &message) {
+  add(COLOR_RED, "ERR", tag, message);
+  throw std::runtime_error(message);
+}
+
+void private_logger_impl::warn(const std::string &tag, const std::string &message) {
+  add(COLOR_YELLOW, "WARN",tag, message);
+}
+
+void private_logger_impl::ok(const std::string &tag, const std::string &message) {
+  add(COLOR_GREEN, "OK", tag, message);
+}
+
+std::vector<std::string> private_logger_impl::last_log_messages() {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  std::vector<std::string> ret;
+  for (int i = 0; i < m_log_last_messages.size(); i++) {
+    ret.push_back(m_log_last_messages[i]);
+  }
+  return ret;
+};
+
+void private_logger_impl::do_log_rotate_update_filename(bool force) {
+  long t_now_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  long rotate_diff = t_now_seconds - m_log_start_time;
+  if (force || m_log_start_time == 0 || rotate_diff > m_rotation_period_in_seconds) {
+    m_log_start_time = t_now_seconds;
+    m_log_file_fullpath = m_log_dir + "/"
+      + m_log_file_name_prefix
+      + _format_time_for_filename(m_log_start_time) + ".log";
   }
 }
 
-// ---------------------------------------------------------------------
-// Global
+void private_logger_impl::add(color_modifier &clr, const std::string &type, const std::string &tag, const std::string &message) {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  do_log_rotate_update_filename();
 
-Global::Global() {
-  // added default first log config
-  logs.push_back(new Config());
-  m_logVectorSize = logs.size();
-}
-
-// ---------------------------------------------------------------------
-
-void Log_add(int idx, ColorModifier &clr, const std::string &sType, const std::string &sTag, const std::string &sMessage) {
-  Log::g_GLOBAL.logs[idx]->doLogRotateUpdateFilename();
-
-  std::lock_guard<std::mutex> lock(Log::g_GLOBAL.logs[idx]->logMutex);
-  ColorModifier def(ColorCode::FG_DEFAULT);
-
-  std::string sLogMessage = getCurrentTimeForLogFormat() + ", " + getThreadId()
-    + " [" + sType + "] " + sTag + ": " + sMessage;
-  std::cout << clr << sLogMessage << def << std::endl;
-
-  Log::g_GLOBAL.logs[idx]->logLastMessages.push_front(sLogMessage);
-
-  while (Log::g_GLOBAL.logs[idx]->logLastMessages.size() > 50) {
-    Log::g_GLOBAL.logs[idx]->logLastMessages.pop_back();
+  std::string log_message = _current_time_for_log_format() + ", " + _get_thread_id() + " [" + type + "] " + tag + ": " + message;
+  if (m_enable_console_output) {
+    std::cout << clr << log_message << COLOR_DEFAULT << std::endl;
   }
-
-  // log file
-  if (Log::g_GLOBAL.logs[idx]->enableLogFile) {
-    std::ofstream logFile(Log::g_GLOBAL.logs[idx]->logFile, std::ios::app);
-    if (!logFile) {
+ 
+  m_log_last_messages.push_front(log_message);
+  while (m_log_last_messages.size() > 50) {
+    m_log_last_messages.pop_back();
+  }
+  if (m_enable_log_file) {
+    std::ofstream log_file(m_log_file_fullpath, std::ios::app);
+    if (!log_file) {
       std::cout << "Error Opening File" << std::endl;
       return;
     }
-
-    logFile << sLogMessage << std::endl;
-    logFile.close();
+    log_file << log_message << std::endl;
+    log_file.close();
   }
 }
 
-// ---------------------------------------------------------------------
-// Log
-
-Global Log::g_GLOBAL;
-
-void Log::debug(const std::string &sTag, const std::string &sMessage) {
-  ColorModifier cyan(ColorCode::FG_CYAN);
-  Log_add(0, cyan, "DEBUG", sTag, sMessage);
+logger *logger::create() {
+  return new private_logger_impl();
 }
 
-void Log::info(const std::string & sTag, const std::string &sMessage) {
-  ColorModifier def(ColorCode::FG_DEFAULT);
-  Log_add(0, def, "INFO", sTag, sMessage);
+logger *log::g_GLOBAL = logger::create();
+
+void log::debug(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->debug(tag, message);
 }
 
-void Log::err(const std::string & sTag, const std::string &sMessage) {
-  ColorModifier red(ColorCode::FG_RED);
-  Log_add(0, red, "ERR", sTag, sMessage);
+void log::info(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->info(tag, message);
 }
 
-void Log::throw_err(const std::string &sTag, const std::string &sMessage) {
-  ColorModifier red(ColorCode::FG_RED);
-  Log_add(0, red, "ERR", sTag, sMessage);
-  throw std::runtime_error(sMessage);
+void log::err(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->err(tag, message);
 }
 
-void Log::warn(const std::string & sTag, const std::string &sMessage) {
-  ColorModifier yellow(ColorCode::FG_YELLOW);
-  Log_add(0, yellow, "WARN",sTag, sMessage);
+void log::throw_err(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->throw_err(tag, message);
 }
 
-void Log::ok(const std::string &sTag, const std::string &sMessage) {
-  ColorModifier green(ColorCode::FG_GREEN);
-  Log_add(0, green, "OK", sTag, sMessage);
+void log::warn(const std::string & tag, const std::string &message) {
+  log::g_GLOBAL->warn(tag, message);
 }
 
-std::vector<std::string> Log::getLastLogMessages() {
-  std::lock_guard<std::mutex> lock(Log::g_GLOBAL.logs[0]->logMutex);
-  std::vector<std::string> vRet;
-  for (int i = 0; i < Log::g_GLOBAL.logs[0]->logLastMessages.size(); i++) {
-    vRet.push_back(Log::g_GLOBAL.logs[0]->logLastMessages[i]);
-  }
-  return vRet;
+void log::ok(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->ok(tag, message);
 }
 
-void Log::setLogDirectory(const std::string &sDirectoryPath) {
-  Log::g_GLOBAL.logs[0]->logDir = sDirectoryPath;
-  if (!dirExists(sDirectoryPath)) {
-    if (!makeDir(sDirectoryPath)) {
-      Log::err("setLogDirectory", "Could not create log directory '" + sDirectoryPath + "'");
-    }
-  }
-  Log::g_GLOBAL.logs[0]->doLogRotateUpdateFilename(true);
+std::vector<std::string> log::last_log_messages() {
+  return log::g_GLOBAL->last_log_messages();
 }
 
-void Log::setPrefixLogFile(const std::string &sPrefixLogFile) {
-  Log::g_GLOBAL.logs[0]->logPrefixFile = sPrefixLogFile;
-  Log::g_GLOBAL.logs[0]->doLogRotateUpdateFilename(true);
+void log::set_log_dirpath(const std::string &log_dir) {
+  log::g_GLOBAL->set_log_dirpath(log_dir);
 }
 
-void Log::setEnableLogFile(bool bEnable) {
-  Log::g_GLOBAL.logs[0]->enableLogFile = bEnable;
+const std::string &log::get_log_dirpath() {
+  return log::g_GLOBAL->get_log_dirpath();
 }
 
-void Log::setRotationPeriodInSec(long nRotationPeriodInSec) {
-  Log::g_GLOBAL.logs[0]->logRotationPeriodInSeconds = nRotationPeriodInSec;
+void log::set_log_filename_prefix(const std::string &prefix) {
+  log::g_GLOBAL->set_log_filename_prefix(prefix);
+}
+
+void log::set_enable_log_file(bool val) {
+  log::g_GLOBAL->set_enable_log_file(val);
+}
+
+void log::set_rotation_period_in_seconds(int val_in_seconds) {
+  log::g_GLOBAL->set_rotation_period_in_seconds(val_in_seconds);
+}
+
+int log::get_rotation_period_in_seconds() {
+  return log::g_GLOBAL->get_rotation_period_in_seconds();
 }
 
 } // namespace sea5kg
