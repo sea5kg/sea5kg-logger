@@ -22,18 +22,18 @@
  * SOFTWARE.
 */
 
-// original source-code: https://github.com/wsjcpp/wsjcpp-logger
+// original source-code: https://github.com/sea5kg/sea5kg-logger
 
-#ifndef WSJCPP_LOGGER_H
-#define WSJCPP_LOGGER_H
+#ifndef SEA5KG_LOGGER_H
+#define SEA5KG_LOGGER_H
 
-#define WSJCPP_LOGGER_VER "1.0.1"
-#define WSJCPP_LOGGER_VER_MAJOR "1"
-#define WSJCPP_LOGGER_VER_MINOR "0"
-#define WSJCPP_LOGGER_VER_BUILD "1"
-#define WSJCPP_LOGGER_VER_1
-#define WSJCPP_LOGGER_VER_1_0
-#define WSJCPP_LOGGER_VER_1_0_1
+#define SEA5KG_LOGGER_VER "1.0.1"
+#define SEA5KG_LOGGER_VER_MAJOR "1"
+#define SEA5KG_LOGGER_VER_MINOR "0"
+#define SEA5KG_LOGGER_VER_BUILD "1"
+#define SEA5KG_LOGGER_VER_1
+#define SEA5KG_LOGGER_VER_1_0
+#define SEA5KG_LOGGER_VER_1_0_1
 
 #include <string>
 #include <vector>
@@ -41,7 +41,7 @@
 #include <mutex>
 #include <deque>
 
-namespace wsjcpp {
+namespace sea5kg {
 
 class Config {
 public:
@@ -82,7 +82,7 @@ public:
   static void setRotationPeriodInSec(long nRotationPeriodInSec);
 };
 
-} // namespace wsjcpp
+} // namespace sea5kg
 
 
-#endif // WSJCPP_LOGGER_H
+#endif // SEA5KG_LOGGER_H

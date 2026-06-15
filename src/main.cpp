@@ -22,25 +22,25 @@
  * SOFTWARE.
 */
 
-// original source-code: https://github.com/wsjcpp/wsjcpp-logger
+// original source-code: https://github.com/sea5kg/sea5kg-logger
 
 #include <string.h>
 #include <iostream>
 #include <algorithm>
-#include "wsjcpp_logger.h"
+#include "sea5kg_logger.h"
 
 int main(int argc, char* argv[]) {
     const std::string TAG = "MAIN";
 
-    wsjcpp::Log::setLogDirectory(".logs");
-    wsjcpp::Log::setPrefixLogFile("wsjcpp_logger");
-    wsjcpp::Log::setEnableLogFile(true);
+    sea5kg::Log::setLogDirectory(".logs");
+    sea5kg::Log::setPrefixLogFile("sea5kg_logger");
+    sea5kg::Log::setEnableLogFile(true);
 
-    wsjcpp::Log::debug(TAG, "Hello info");
-    wsjcpp::Log::info(TAG, "Hello info");
-    wsjcpp::Log::err(TAG, "Hello err");
-    wsjcpp::Log::warn(TAG, "Hello warn");
-    wsjcpp::Log::ok(TAG, "Hello ok");
+    sea5kg::Log::debug(TAG, "Hello info");
+    sea5kg::Log::info(TAG, "Hello info");
+    sea5kg::Log::err(TAG, "Hello err");
+    sea5kg::Log::warn(TAG, "Hello warn");
+    sea5kg::Log::ok(TAG, "Hello ok");
 
     return 0;
 }

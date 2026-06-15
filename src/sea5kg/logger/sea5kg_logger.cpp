@@ -22,9 +22,9 @@
  * SOFTWARE.
 */
 
-// original source-code: https://github.com/wsjcpp/wsjcpp-logger
+// original source-code: https://github.com/sea5kg/sea5kg-logger
 
-#include "wsjcpp_logger.h"
+#include "sea5kg_logger.h"
 
 #ifndef _MSC_VER
     #include <dirent.h>
@@ -44,7 +44,7 @@
 #include <thread>
 #include <iomanip> // std::setw
 
-namespace wsjcpp {
+namespace sea5kg {
 
 long getCurrentTimeInMilliseconds() {
   long nTimeStart = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -278,4 +278,4 @@ void Log::setRotationPeriodInSec(long nRotationPeriodInSec) {
   Log::g_GLOBAL.logs[0]->logRotationPeriodInSeconds = nRotationPeriodInSec;
 }
 
-} // namespace wsjcpp
+} // namespace sea5kg

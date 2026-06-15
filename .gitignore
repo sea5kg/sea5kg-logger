@@ -1,5 +1,5 @@
 tmp/*
-/wsjcpp-logger
+/sea5kg-logger
 .wsjcpp/*
 .vscode/*
 *.log

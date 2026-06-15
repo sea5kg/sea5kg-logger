@@ -1,17 +1,17 @@
 wsjcpp_version: v0.0.1
 cmake_cxx_standard: 11
-cmake_minimum_required: 3.5
+cmake_minimum_required: 3.7
 
-name: wsjcpp-logger
-version: v1.0.1
+name: sea5kg-logger
+version: v2.0.0
 description: C++ Logger Implementation
-issues: https://github.com/wsjcpp/wsjcpp-logger/issues
+issues: https://github.com/sea5kg/sea5kg-logger/issues
 repositories:
   - type: main
-    url: "https://github.com/wsjcpp/wsjcpp-logger"
+    url: "https://github.com/sea5kg/sea5kg-logger"
 keywords:
   - c++
-  - wsjcpp
+  - cpp11
   - logger
 
 authors:
@@ -19,10 +19,10 @@ authors:
     email: mrseakg@gmail.com
 
 distribution:
-  - source-file: src/wsjcpp-logger/wsjcpp_logger.cpp
-    target-file: wsjcpp_logger.cpp
+  - source-file: src/sea5kg/logger/sea5kg_logger.cpp
+    target-file: sea5kg_logger.cpp
     type: "source-code"
-  - source-file: src/wsjcpp-logger/wsjcpp_logger.h
-    target-file: wsjcpp_logger.h
+  - source-file: src/sea5kg/logger/sea5kg_logger.h
+    target-file: sea5kg_logger.h
     type: "source-code" # todo must be header-file
 
