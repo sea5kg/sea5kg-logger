@@ -129,6 +129,18 @@ static sea5kg::color_modifier COLOR_RED(sea5kg::color_code::FG_RED);
 static sea5kg::color_modifier COLOR_GRAY(sea5kg::color_code::FG_GRAY);
 static sea5kg::color_modifier COLOR_GREEN(sea5kg::color_code::FG_GREEN);
 
+const sea5kg::color_modifier &log_level_to_color_modifier(log_level lvl) {
+  switch (lvl) {
+    case log_level::DEBUG: return COLOR_GRAY;
+    case log_level::INFO: return COLOR_DEFAULT;
+    case log_level::SUCCESS: return COLOR_GREEN;
+    case log_level::WARNING: return COLOR_YELLOW;
+    case log_level::ERROR: return COLOR_RED;
+    case log_level::CRITICAL: return COLOR_RED;
+  }
+  return COLOR_DEFAULT;
+}
+
 class private_logger_impl : public logger {
 public:
   private_logger_impl();
@@ -159,7 +171,7 @@ public:
 private:
   void do_log_rotate_update_filename(bool force = false);
   std::string prepare_log_dir(const std::string &log_dir, int t_now_seconds);
-  void add(color_modifier &clr, log_level log_level, const std::string &tag, const std::string &message);
+  void add(log_level log_level, const std::string &tag, const std::string &message);
 
   std::mutex m_mutex;
   std::string m_log_dir;
@@ -282,27 +294,27 @@ std::vector<std::string> private_logger_impl::runtime_history_messages() {
 }
 
 void private_logger_impl::debug(const std::string &tag, const std::string &message) {
-  add(COLOR_GRAY, log_level::DEBUG, tag, message);
+  add(log_level::DEBUG, tag, message);
 }
 
 void private_logger_impl::info(const std::string &tag, const std::string &message) {
-  add(COLOR_DEFAULT, log_level::INFO, tag, message);
+  add(log_level::INFO, tag, message);
 }
 
 void private_logger_impl::success(const std::string &tag, const std::string &message) {
-  add(COLOR_GREEN, log_level::SUCCESS, tag, message);
+  add(log_level::SUCCESS, tag, message);
 }
 
 void private_logger_impl::warning(const std::string &tag, const std::string &message) {
-  add(COLOR_YELLOW, log_level::WARNING, tag, message);
+  add(log_level::WARNING, tag, message);
 }
 
 void private_logger_impl::error(const std::string &tag, const std::string &message) {
-  add(COLOR_RED, log_level::ERROR, tag, message);
+  add(log_level::ERROR, tag, message);
 }
 
 void private_logger_impl::critical(const std::string &tag, const std::string &message) {
-  add(COLOR_RED, log_level::CRITICAL, tag, message);
+  add(log_level::CRITICAL, tag, message);
   throw std::runtime_error(message);
 }
 
@@ -384,37 +396,40 @@ std::string private_logger_impl::prepare_log_dir(const std::string &log_dir, int
   return log_dir_formatted;
 }
 
-void private_logger_impl::add(color_modifier &clr, log_level lvl, const std::string &tag, const std::string &message) {
+static const std::string type_none = " [?] ";
+static const std::string type_debug = " [DEBUG] ";
+static const std::string type_info = " [INFO] ";
+static const std::string type_success = " [SUCCESS] ";
+static const std::string type_warning = " [WARNING] ";
+static const std::string type_error = " [ERROR] ";
+static const std::string type_critical = " [CRITICAL] ";
+
+const std::string &log_level_to_type(log_level lvl) {
+  switch (lvl) {
+    case log_level::DEBUG: return type_debug;
+    case log_level::INFO: return type_info;
+    case log_level::SUCCESS: return type_success;
+    case log_level::WARNING: return type_warning;
+    case log_level::ERROR: return type_error;
+    case log_level::CRITICAL: return type_critical;
+  }
+  return type_none;
+}
+
+void init_log_message(std::string &log_message, log_level lvl, const std::string &tag, const std::string &message) {
+  if (log_message.empty()) {
+    log_message = _current_time_for_log_format() + ", " + _get_thread_id() + log_level_to_type(lvl) + tag + ": " + message;
+  }
+}
+
+void private_logger_impl::add(log_level lvl, const std::string &tag, const std::string &message) {
   std::lock_guard<std::mutex> lock(m_mutex);
   do_log_rotate_update_filename();
-  std::string type = " [?] ";
-  switch (lvl) {
-    case log_level::DEBUG:
-      type = " [DEBUG] ";
-      break;
-    case log_level::INFO:
-      type = " [INFO] ";
-      break;
-    case log_level::SUCCESS:
-      type = " [SUCCESS] ";
-      break;
-    case log_level::WARNING:
-      type = " [WARNING] ";
-      break;
-    case log_level::ERROR:
-      type = " [ERROR] ";
-      break;
-    case log_level::CRITICAL:
-      type = " [CRITICAL] ";
-      break;
-  }
 
   std::string log_message;
   if (m_enable_console_output && lvl >= m_log_level_console_output) {
-    if (log_message.empty()) {
-      log_message = _current_time_for_log_format() + ", " + _get_thread_id() + type + tag + ": " + message;
-    }
-    std::cout << clr << log_message << COLOR_DEFAULT << std::endl;
+    init_log_message(log_message, lvl, tag, message);
+    std::cout << log_level_to_color_modifier(lvl) << log_message << COLOR_DEFAULT << std::endl;
   }
   
   if (m_enable_log_file && lvl >= m_log_level_file_output) {
@@ -423,17 +438,13 @@ void private_logger_impl::add(color_modifier &clr, log_level lvl, const std::str
       std::cerr << "Error Opening File '" << m_log_file_fullpath << "'" << std::endl;
       return;
     }
-    if (log_message.empty()) {
-      log_message = _current_time_for_log_format() + ", " + _get_thread_id() + type + tag + ": " + message;
-    }
+    init_log_message(log_message, lvl, tag, message);
     log_file << log_message << std::endl;
     log_file.close();
   }
 
   if (m_runtime_history_size > 0) {
-    if (log_message.empty()) {
-      log_message = _current_time_for_log_format() + ", " + _get_thread_id() + type + tag + ": " + message;
-    }
+    init_log_message(log_message, lvl, tag, message);
     m_runtime_history_messages.push_front(log_message);
     while (m_runtime_history_messages.size() > m_runtime_history_size) {
       m_runtime_history_messages.pop_back();
