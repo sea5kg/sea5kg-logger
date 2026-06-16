@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.0.1] - 2026-??-?? (2026 ?? ??)
+
+- Renamed method 'get_log_dirpath' to just 'log_dirpath'
+- Renamed method 'get_log_file_fullpath' to just 'log_file_fullpath'
+
 ## [v2.0.0] - 2026-06-16 (2026 June 16)
 
 - Renamed `wsjcpp-logger` to `sea5kg-logger`

@@ -159,9 +159,9 @@ class private_logger_impl : public logger {
 public:
   private_logger_impl();
   virtual void set_log_dirpath(const std::string &log_dir) override;
-  virtual const std::string &get_log_dirpath() override;
+  virtual const std::string &log_dirpath() override;
   virtual void set_log_filename_prefix(const std::string &prefix) override;
-  virtual const std::string &get_log_file_fullpath() override;
+  virtual const std::string &log_file_fullpath() override;
   virtual void set_rotation_period_in_seconds(int val_in_seconds) override;
   virtual int rotation_period_in_seconds() override;
   virtual void set_enable_log_file(bool val) override;
@@ -218,7 +218,7 @@ void private_logger_impl::set_log_dirpath(const std::string &log_dir) {
   do_log_rotate_update_filename(true);
 }
 
-const std::string &private_logger_impl::get_log_dirpath() {
+const std::string &private_logger_impl::log_dirpath() {
   return m_log_dir;
 }
 
@@ -228,7 +228,7 @@ void private_logger_impl::set_log_filename_prefix(const std::string &prefix) {
   do_log_rotate_update_filename(true);
 }
 
-const std::string &private_logger_impl::get_log_file_fullpath() {
+const std::string &private_logger_impl::log_file_fullpath() {
   return m_log_file_fullpath;
 }
 
@@ -379,8 +379,8 @@ void log::set_log_dirpath(const std::string &log_dir) {
   log::g_GLOBAL->set_log_dirpath(log_dir);
 }
 
-const std::string &log::get_log_dirpath() {
-  return log::g_GLOBAL->get_log_dirpath();
+const std::string &log::log_dirpath() {
+  return log::g_GLOBAL->log_dirpath();
 }
 
 void log::set_log_filename_prefix(const std::string &prefix) {
