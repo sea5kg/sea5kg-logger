@@ -150,8 +150,6 @@ public:
   virtual const std::string &log_file_fullpath() override;
   virtual void set_rotation_period_in_seconds(int val_in_seconds) override;
   virtual int rotation_period_in_seconds() override;
-  virtual void set_enable_log_file(bool val) override;
-  virtual bool enable_log_file() override;
   virtual void set_log_level_file_output(log_level val) override;
   virtual log_level log_level_file_output() override;
   virtual void set_enable_console_output(bool val) override;
@@ -174,14 +172,13 @@ protected:
   void add(log_level log_level, const std::string &tag, const std::string &message);
 
 private:
-  void do_log_rotate_update_filename(bool force = false);
-  std::string prepare_log_dir(const std::string &log_dir, int t_now_seconds);
+  void do_log_rotate_update_filename(log_level lvl);
+  std::string prepare_log_dir(const std::string &log_dir, int t_now_seconds, log_level lvl);
 
   std::mutex m_mutex;
   std::string m_log_dir;
   std::string m_log_file_name_prefix;
   std::string m_log_file_fullpath;
-  bool m_enable_log_file;
   log_level m_log_level_file_output;
   bool m_enable_console_output;
   log_level m_log_level_console_output;
@@ -196,8 +193,7 @@ private_logger_impl::private_logger_impl() {
   m_log_dir = "./";
   m_log_file_name_prefix = "";
   m_log_file_fullpath = "";
-  m_enable_log_file = false;
-  m_log_level_file_output = log_level::DEBUG;
+  m_log_level_file_output = log_level::DISABLE;
   m_enable_console_output = true;
   m_log_level_console_output = log_level::DEBUG;
   m_log_level_redirect_to_global = log_level::DISABLE;
@@ -209,7 +205,7 @@ private_logger_impl::private_logger_impl() {
 void private_logger_impl::set_log_dirpath(const std::string &log_dir) {
   std::lock_guard<std::mutex> lock(m_mutex);
   m_log_dir = log_dir;
-  do_log_rotate_update_filename(true);
+  do_log_rotate_update_filename(m_log_level_file_output);
 }
 
 const std::string &private_logger_impl::log_dirpath() {
@@ -220,7 +216,7 @@ const std::string &private_logger_impl::log_dirpath() {
 void private_logger_impl::set_log_filename_prefix(const std::string &prefix) {
   std::lock_guard<std::mutex> lock(m_mutex);
   m_log_file_name_prefix = prefix;
-  do_log_rotate_update_filename(true);
+  do_log_rotate_update_filename(m_log_level_file_output);
 }
 
 const std::string &private_logger_impl::log_file_fullpath() {
@@ -238,20 +234,10 @@ int private_logger_impl::rotation_period_in_seconds() {
   return m_rotation_period_in_seconds;
 }
 
-void private_logger_impl::set_enable_log_file(bool val) {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  m_enable_log_file = val;
-  do_log_rotate_update_filename(true);
-}
-
-bool private_logger_impl::enable_log_file() {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  return m_enable_log_file;
-}
-
 void private_logger_impl::set_log_level_file_output(log_level val) {
   std::lock_guard<std::mutex> lock(m_mutex);
   m_log_level_file_output = val;
+  do_log_rotate_update_filename(m_log_level_file_output);
 }
 
 log_level private_logger_impl::log_level_file_output() {
@@ -337,12 +323,15 @@ void private_logger_impl::critical(const std::string &tag, const std::string &me
   throw std::runtime_error(message);
 }
 
-void private_logger_impl::do_log_rotate_update_filename(bool force) {
+void private_logger_impl::do_log_rotate_update_filename(log_level lvl) {
+  if (lvl == log_level::DISABLE) {
+    return;
+  }
   int t_now_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   long rotate_diff = t_now_seconds - m_log_start_time;
-  if (force || m_log_start_time == 0 || rotate_diff > m_rotation_period_in_seconds) {
+  if (m_log_start_time == 0 || rotate_diff > m_rotation_period_in_seconds) {
     m_log_start_time = t_now_seconds;
-    std::string log_dir_formatted = prepare_log_dir(m_log_dir, t_now_seconds);
+    std::string log_dir_formatted = prepare_log_dir(m_log_dir, t_now_seconds, lvl);
     m_log_file_fullpath = log_dir_formatted + "/"
       + m_log_file_name_prefix
       + _format_time_for_filename(m_log_start_time) + ".log";
@@ -381,7 +370,7 @@ bool _make_dir(const std::string &dir_name) {
   return true;
 }
 
-std::string private_logger_impl::prepare_log_dir(const std::string &log_dir, int t_now_seconds) {
+std::string private_logger_impl::prepare_log_dir(const std::string &log_dir, int t_now_seconds, log_level lvl) {
   std::string log_dir_formatted = log_dir;
   {
     std::time_t tm_ = long(t_now_seconds);
@@ -395,7 +384,7 @@ std::string private_logger_impl::prepare_log_dir(const std::string &log_dir, int
     strftime(buf, sizeof(buf), log_dir_formatted.c_str(), &tstruct);
     log_dir_formatted = std::string(buf);
   }
-  if (m_enable_log_file) {
+  if (lvl >= m_log_level_file_output) {
     if (!_dir_exists(log_dir_formatted)) {
       // make dirs
       // std::cout << "Make dirs for log: " << log_dir_formatted << std::endl;
@@ -443,7 +432,7 @@ void init_log_message(std::string &log_message, log_level lvl, const std::string
 
 void private_logger_impl::add(log_level lvl, const std::string &tag, const std::string &message) {
   std::lock_guard<std::mutex> lock(m_mutex);
-  do_log_rotate_update_filename();
+  do_log_rotate_update_filename(lvl);
 
   std::string log_message;
   if (m_enable_console_output && lvl >= m_log_level_console_output) {
@@ -451,7 +440,7 @@ void private_logger_impl::add(log_level lvl, const std::string &tag, const std::
     std::cout << log_level_to_color_modifier(lvl) << log_message << COLOR_DEFAULT << std::endl;
   }
   
-  if (m_enable_log_file && lvl >= m_log_level_file_output) {
+  if (lvl >= m_log_level_file_output) {
     std::ofstream log_file(m_log_file_fullpath, std::ios::app);
     if (!log_file) {
       std::cerr << "Error Opening File '" << m_log_file_fullpath << "'" << std::endl;
@@ -491,14 +480,6 @@ const std::string &log::log_dirpath() {
 
 void log::set_log_filename_prefix(const std::string &prefix) {
   log::g_GLOBAL->set_log_filename_prefix(prefix);
-}
-
-void log::set_enable_log_file(bool val) {
-  log::g_GLOBAL->set_enable_log_file(val);
-}
-
-bool log::enable_log_file() {
-  return log::g_GLOBAL->enable_log_file();
 }
 
 void log::set_log_level_file_output(log_level val) {

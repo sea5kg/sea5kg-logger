@@ -59,8 +59,6 @@ public:
   virtual const std::string &log_file_fullpath() = 0;
   virtual void set_rotation_period_in_seconds(int val_in_seconds) = 0;
   virtual int rotation_period_in_seconds() = 0;
-  virtual void set_enable_log_file(bool val) = 0;
-  virtual bool enable_log_file() = 0;
   virtual void set_log_level_file_output(log_level val) = 0;
   virtual log_level log_level_file_output() = 0;
   virtual void set_enable_console_output(bool val) = 0;
@@ -86,8 +84,6 @@ public:
   static void set_log_dirpath(const std::string &dirpath);
   static const std::string &log_dirpath();
   static void set_log_filename_prefix(const std::string &prefix);
-  static void set_enable_log_file(bool val);
-  static bool enable_log_file();
   static void set_log_level_file_output(log_level val);
   static log_level log_level_file_output();
   static void set_log_level_console_output(log_level val);
