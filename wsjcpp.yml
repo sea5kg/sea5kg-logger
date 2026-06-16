@@ -3,7 +3,7 @@ cmake_cxx_standard: 11
 cmake_minimum_required: 3.7
 
 name: sea5kg-logger
-version: v2.0.0
+version: v2.0.1
 description: C++ Logger Implementation
 issues: https://github.com/sea5kg/sea5kg-logger/issues
 repositories:
