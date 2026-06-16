@@ -158,6 +158,8 @@ public:
   virtual void set_log_level_console_output(log_level val) override;
   virtual log_level log_level_console_output() override;
   virtual bool enable_console_output() override;
+  virtual void set_log_level_redirect_to_global(log_level val) override;
+  virtual log_level log_level_redirect_to_global() override;
   virtual void set_runtime_history_size(int val) override;
   virtual int runtime_history_size() override;
   virtual std::vector<std::string> runtime_history_messages() override;
@@ -168,10 +170,12 @@ public:
   virtual void error(const std::string &tag, const std::string &message) override;
   virtual void critical(const std::string &tag, const std::string &message) override;
 
+protected:
+  void add(log_level log_level, const std::string &tag, const std::string &message);
+
 private:
   void do_log_rotate_update_filename(bool force = false);
   std::string prepare_log_dir(const std::string &log_dir, int t_now_seconds);
-  void add(log_level log_level, const std::string &tag, const std::string &message);
 
   std::mutex m_mutex;
   std::string m_log_dir;
@@ -181,6 +185,7 @@ private:
   log_level m_log_level_file_output;
   bool m_enable_console_output;
   log_level m_log_level_console_output;
+  log_level m_log_level_redirect_to_global;
   int m_runtime_history_size;
   long m_log_start_time;
   int m_rotation_period_in_seconds;
@@ -195,6 +200,7 @@ private_logger_impl::private_logger_impl() {
   m_log_level_file_output = log_level::DEBUG;
   m_enable_console_output = true;
   m_log_level_console_output = log_level::DEBUG;
+  m_log_level_redirect_to_global = log_level::DISABLE;
   m_log_start_time = 0;
   m_rotation_period_in_seconds = 86400; // 24h
   m_runtime_history_size = 0;
@@ -273,6 +279,19 @@ log_level private_logger_impl::log_level_console_output() {
   return m_log_level_console_output;
 }
 
+void private_logger_impl::set_log_level_redirect_to_global(log_level val) {
+  if (this == log::g_GLOBAL) {
+    log::warning("logger", "Forbidden set redirect from global log to global");
+    return;
+  }
+  std::lock_guard<std::mutex> lock(m_mutex);
+  m_log_level_redirect_to_global = val;
+}
+
+log_level private_logger_impl::log_level_redirect_to_global() {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  return m_log_level_redirect_to_global;
+}
 
 void private_logger_impl::set_runtime_history_size(int val) {
   std::lock_guard<std::mutex> lock(m_mutex);
@@ -449,6 +468,10 @@ void private_logger_impl::add(log_level lvl, const std::string &tag, const std::
     while (m_runtime_history_messages.size() > m_runtime_history_size) {
       m_runtime_history_messages.pop_back();
     }
+  }
+
+  if (this != log::g_GLOBAL && lvl >= m_log_level_redirect_to_global) {
+    ((private_logger_impl *)log::g_GLOBAL)->add(lvl, tag, message);
   }
 }
 

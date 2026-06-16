@@ -47,7 +47,7 @@ enum class log_level {
   WARNING = 30,
   ERROR = 40,
   CRITICAL = 50,
-  SILENT = 60,
+  DISABLE = 60,
 };
 
 class logger {
@@ -60,7 +60,6 @@ public:
   virtual void set_rotation_period_in_seconds(int val_in_seconds) = 0;
   virtual int rotation_period_in_seconds() = 0;
   virtual void set_enable_log_file(bool val) = 0;
-  // virtual void set_redirect_to_global_log(log_level val) = 0;
   virtual bool enable_log_file() = 0;
   virtual void set_log_level_file_output(log_level val) = 0;
   virtual log_level log_level_file_output() = 0;
@@ -68,6 +67,8 @@ public:
   virtual bool enable_console_output() = 0;
   virtual void set_log_level_console_output(log_level val) = 0;
   virtual log_level log_level_console_output() = 0;
+  virtual void set_log_level_redirect_to_global(log_level val) = 0;
+  virtual log_level log_level_redirect_to_global() = 0;
   virtual void set_runtime_history_size(int val) = 0;
   virtual int runtime_history_size() = 0;
   virtual std::vector<std::string> runtime_history_messages() = 0;

@@ -47,23 +47,53 @@ int main(int argc, char* argv[]) {
   sea5kg::log::success(TAG, "Hello ok");
   sea5kg::log::error(TAG, "Hello err");
   sea5kg::log::warning(TAG, "Hello warn");
+
+  const std::string TAG2 = "ANOTHER";
+  std::shared_ptr<sea5kg::logger> another_logger(sea5kg::logger::create());
+  another_logger->set_log_dirpath(sea5kg::log::log_dirpath());
+  another_logger->set_rotation_period_in_seconds(sea5kg::log::rotation_period_in_seconds());
+  another_logger->set_log_filename_prefix("another_");
+  another_logger->set_enable_log_file(true);
+  another_logger->set_log_level_console_output(sea5kg::log_level::DISABLE);
+  another_logger->set_log_level_redirect_to_global(sea5kg::log_level::SUCCESS);
+  another_logger->debug(TAG2, "Message 0");
+  another_logger->info(TAG2, "Message 1");
+  another_logger->success(TAG2, "Message 2");
+  another_logger->warning(TAG2, "Message 3");
+  another_logger->error(TAG2, "Message 4");
+
   return 0;
 }
 ```
 
 Example console output:
 ```
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [INFO] MAIN: Hello info
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [SUCCESS] MAIN: Hello ok
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [ERROR] MAIN: Hello err
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [WARNING] MAIN: Hello warn
+2026-06-16 13:33:11.814, 0x000079b362292740 [INFO] MAIN: Hello info
+2026-06-16 13:33:11.814, 0x000079b362292740 [SUCCESS] MAIN: Hello ok
+2026-06-16 13:33:11.814, 0x000079b362292740 [ERROR] MAIN: Hello err
+2026-06-16 13:33:11.814, 0x000079b362292740 [WARNING] MAIN: Hello warn
+2026-06-16 13:33:11.814, 0x000079b362292740 [SUCCESS] ANOTHER: Message 2
+2026-06-16 13:33:11.814, 0x000079b362292740 [WARNING] ANOTHER: Message 3
+2026-06-16 13:33:11.814, 0x000079b362292740 [ERROR] ANOTHER: Message 4
 ```
 
-Example file output:
+Example main_* file output:
 ```
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [DEBUG] MAIN: Hello info
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [INFO] MAIN: Hello info
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [SUCCESS] MAIN: Hello ok
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [ERROR] MAIN: Hello err
-2026-06-16 12:58:56.634, 0x00007b1d23e94740 [WARNING] MAIN: Hello warn
+2026-06-16 13:33:11.814, 0x000079b362292740 [DEBUG] MAIN: Hello info
+2026-06-16 13:33:11.814, 0x000079b362292740 [INFO] MAIN: Hello info
+2026-06-16 13:33:11.814, 0x000079b362292740 [SUCCESS] MAIN: Hello ok
+2026-06-16 13:33:11.814, 0x000079b362292740 [ERROR] MAIN: Hello err
+2026-06-16 13:33:11.814, 0x000079b362292740 [WARNING] MAIN: Hello warn
+2026-06-16 13:33:11.814, 0x000079b362292740 [SUCCESS] ANOTHER: Message 2
+2026-06-16 13:33:11.814, 0x000079b362292740 [WARNING] ANOTHER: Message 3
+2026-06-16 13:33:11.814, 0x000079b362292740 [ERROR] ANOTHER: Message 4
+```
+
+Example another_* file output:
+```
+2026-06-16 13:33:11.814, 0x000079b362292740 [DEBUG] ANOTHER: Message 0
+2026-06-16 13:33:11.814, 0x000079b362292740 [INFO] ANOTHER: Message 1
+2026-06-16 13:33:11.814, 0x000079b362292740 [SUCCESS] ANOTHER: Message 2
+2026-06-16 13:33:11.814, 0x000079b362292740 [WARNING] ANOTHER: Message 3
+2026-06-16 13:33:11.814, 0x000079b362292740 [ERROR] ANOTHER: Message 4
 ```
