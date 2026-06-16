@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.0.0] - 2026-05-16 (2026 June 16)
+## [v2.0.0] - 2026-06-16 (2026 June 16)
 
 - Renamed `wsjcpp-logger` to `sea5kg-logger`
 - Default runtime_history_messages to 0, and added functions for control it
