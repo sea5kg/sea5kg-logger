@@ -96,32 +96,6 @@ std::string _format_time_for_filename(long nTimeInSec) {
   return std::string(buf);
 }
 
-bool _dir_exists(const std::string &sDirname) {
-  struct stat st;
-  bool bExists = (stat(sDirname.c_str(), &st) == 0);
-  if (bExists) {
-    return (st.st_mode & S_IFDIR) != 0;
-  }
-  return false;
-}
-
-bool _make_dir(const std::string &dir_name) {
-  struct stat st;
-
-  // const std::filesystem::path dir{dir_name};
-  // std::filesystem::create_directory(dir);
-
-  int nStatus = mkdir(dir_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  if (nStatus == 0) {
-    return true;
-  }
-  if (nStatus == EACCES) {
-    std::cout << "FAILED create folder " << dir_name << std::endl;
-    return false;
-  }
-  return true;
-}
-
 enum class color_code {
   FG_0 = 0,
   FG_GRAY = 2,
@@ -180,6 +154,7 @@ public:
 
 private:
   void do_log_rotate_update_filename(bool force = false);
+  std::string prepare_log_dir(const std::string &log_dir, int t_now_seconds);
   void add(color_modifier &clr, const std::string &type, const std::string &tag, const std::string &message);
 
   std::mutex m_mutex;
@@ -208,13 +183,6 @@ private_logger_impl::private_logger_impl() {
 void private_logger_impl::set_log_dirpath(const std::string &log_dir) {
   std::lock_guard<std::mutex> lock(m_mutex);
   m_log_dir = log_dir;
-  if (m_enable_log_file) {
-    if (!_dir_exists(m_log_dir)) {
-      if (!_make_dir(m_log_dir)) {
-        log::throw_err("set_log_dirpath", "Could not create log directory '" + m_log_dir + "'");
-      }
-    }
-  }
   do_log_rotate_update_filename(true);
 }
 
@@ -243,14 +211,6 @@ int private_logger_impl::rotation_period_in_seconds() {
 void private_logger_impl::set_enable_log_file(bool val) {
   std::lock_guard<std::mutex> lock(m_mutex);
   m_enable_log_file = val;
-  // make a log dir
-  if (m_enable_log_file) {
-    if (!_dir_exists(m_log_dir)) {
-      if (!_make_dir(m_log_dir)) {
-        log::throw_err("set_enable_log_file", "Could not create log directory '" + m_log_dir + "'");
-      }
-    }
-  }
   do_log_rotate_update_filename(true);
 }
 
@@ -309,14 +269,81 @@ void private_logger_impl::ok(const std::string &tag, const std::string &message)
 }
 
 void private_logger_impl::do_log_rotate_update_filename(bool force) {
-  long t_now_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  int t_now_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   long rotate_diff = t_now_seconds - m_log_start_time;
   if (force || m_log_start_time == 0 || rotate_diff > m_rotation_period_in_seconds) {
     m_log_start_time = t_now_seconds;
-    m_log_file_fullpath = m_log_dir + "/"
+    std::string log_dir_formatted = prepare_log_dir(m_log_dir, t_now_seconds);
+    m_log_file_fullpath = log_dir_formatted + "/"
       + m_log_file_name_prefix
       + _format_time_for_filename(m_log_start_time) + ".log";
   }
+}
+
+
+bool _dir_exists(const std::string &sDirname) {
+  struct stat st;
+  bool bExists = (stat(sDirname.c_str(), &st) == 0);
+  if (bExists) {
+    return (st.st_mode & S_IFDIR) != 0;
+  }
+  return false;
+}
+
+bool _make_dir(const std::string &dir_name) {
+  if (_dir_exists(dir_name)) {
+    return true;
+  }
+
+  struct stat st;
+
+  // const std::filesystem::path dir{dir_name};
+  // std::filesystem::create_directory(dir);
+
+  int nStatus = mkdir(dir_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  if (nStatus == 0) {
+    return true;
+  }
+  if (nStatus == EACCES) {
+    std::cout << " " << dir_name << std::endl;
+    throw std::runtime_error("FAILED create folder '" + dir_name + "'");
+    return false;
+  }
+  return true;
+}
+
+std::string private_logger_impl::prepare_log_dir(const std::string &log_dir, int t_now_seconds) {
+  std::string log_dir_formatted = log_dir;
+  {
+    std::time_t tm_ = long(t_now_seconds);
+    // struct tm tstruct = *localtime(&tm_);
+    struct tm tstruct;
+    gmtime_r(&tm_, &tstruct);
+
+    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+    // for more information about date/time format
+    char buf[255];
+    strftime(buf, sizeof(buf), log_dir_formatted.c_str(), &tstruct);
+    log_dir_formatted = std::string(buf);
+  }
+  if (m_enable_log_file) {
+    if (!_dir_exists(log_dir_formatted)) {
+      // make dirs
+      // std::cout << "Make dirs for log: " << log_dir_formatted << std::endl;
+      std::string sub_path = "";
+      for (int i = 0; i < log_dir_formatted.size(); ++i) {
+        if (log_dir_formatted[i] == '/') {
+          _make_dir(sub_path);
+        }
+        sub_path += log_dir_formatted[i];
+      }
+      _make_dir(sub_path);
+      if (!_dir_exists(log_dir_formatted)) {
+        throw std::runtime_error("FAILED create folder '" + log_dir_formatted + "'");
+      }
+    }
+  }
+  return log_dir_formatted;
 }
 
 void private_logger_impl::add(color_modifier &clr, const std::string &type, const std::string &tag, const std::string &message) {

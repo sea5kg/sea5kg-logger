@@ -32,7 +32,7 @@
 int main(int argc, char* argv[]) {
   const std::string TAG = "MAIN";
   sea5kg::log::set_rotation_period_in_seconds(60*5);
-  sea5kg::log::set_log_dirpath(".logs/2026");
+  sea5kg::log::set_log_dirpath(".logs/%Y/%m/%d");
   sea5kg::log::set_log_filename_prefix("main_");
   sea5kg::log::set_enable_log_file(true);
   sea5kg::log::set_runtime_history_size(50);

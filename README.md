@@ -36,8 +36,8 @@ To init logger first and enable.
 
 int main(int argc, char* argv[]) {
   std::string TAG = "MAIN";
-  sea5kg::log::set_rotation_period_in_seconds(60*5);
-  sea5kg::log::set_log_dirpath(".logs/2026");
+  sea5kg::log::set_rotation_period_in_seconds(60*5); // every 5 minutes
+  sea5kg::log::set_log_dirpath(".logs/%Y/%m/%d");
   sea5kg::log::set_log_filename_prefix("main_");
   sea5kg::log::set_enable_log_file(true);
   sea5kg::log::debug(TAG, "Hello info");
