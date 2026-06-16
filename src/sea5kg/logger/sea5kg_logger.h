@@ -48,18 +48,20 @@ public:
   virtual void set_log_filename_prefix(const std::string &prefix) = 0;
   virtual const std::string &get_log_file_fullpath() = 0;
   virtual void set_rotation_period_in_seconds(int val_in_seconds) = 0;
-  virtual int get_rotation_period_in_seconds() = 0;
+  virtual int rotation_period_in_seconds() = 0;
   virtual void set_enable_log_file(bool val) = 0;
   virtual bool enable_log_file() = 0;
   virtual void set_enable_console_output(bool val) = 0;
   virtual bool enable_console_output() = 0;
+  virtual void set_runtime_history_size(int val) = 0;
+  virtual int runtime_history_size() = 0;
+  virtual std::vector<std::string> runtime_history_messages() = 0;
   virtual void debug(const std::string &tag, const std::string &message) = 0;
   virtual void info(const std::string &tag, const std::string &message) = 0;
   virtual void err(const std::string &tag, const std::string &message) = 0;
   virtual void throw_err(const std::string &tag, const std::string &message) = 0;
   virtual void warn(const std::string &tag, const std::string &message) = 0;
   virtual void ok(const std::string &tag, const std::string &message) = 0;
-  virtual std::vector<std::string> last_log_messages() = 0;
 };
 
 class log {
@@ -71,13 +73,15 @@ public:
   static void throw_err(const std::string &tag, const std::string &message);
   static void warn(const std::string &tag, const std::string &message);
   static void ok(const std::string &tag, const std::string &message);
-  static std::vector<std::string> last_log_messages();
   static void set_log_dirpath(const std::string &dirpath);
   static const std::string &get_log_dirpath();
   static void set_log_filename_prefix(const std::string &prefix);
   static void set_enable_log_file(bool val);
   static void set_rotation_period_in_seconds(int val_in_seconds);
-  static int get_rotation_period_in_seconds();
+  static int rotation_period_in_seconds();
+  static void set_runtime_history_size(int val);
+  static int runtime_history_size();
+  static std::vector<std::string> runtime_history_messages();
 };
 
 } // namespace sea5kg

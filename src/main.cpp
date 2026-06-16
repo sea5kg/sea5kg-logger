@@ -35,6 +35,7 @@ int main(int argc, char* argv[]) {
   sea5kg::log::set_log_dirpath(".logs/2026");
   sea5kg::log::set_log_filename_prefix("main_");
   sea5kg::log::set_enable_log_file(true);
+  sea5kg::log::set_runtime_history_size(50);
   sea5kg::log::debug(TAG, "Hello info");
   sea5kg::log::info(TAG, "Hello info");
   sea5kg::log::err(TAG, "Hello err");

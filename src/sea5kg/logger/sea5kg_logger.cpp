@@ -163,18 +163,20 @@ public:
   virtual void set_log_filename_prefix(const std::string &prefix) override;
   virtual const std::string &get_log_file_fullpath() override;
   virtual void set_rotation_period_in_seconds(int val_in_seconds) override;
-  virtual int get_rotation_period_in_seconds() override;
+  virtual int rotation_period_in_seconds() override;
   virtual void set_enable_log_file(bool val) override;
   virtual bool enable_log_file() override;
   virtual void set_enable_console_output(bool val) override;
   virtual bool enable_console_output() override;
+  virtual void set_runtime_history_size(int val) override;
+  virtual int runtime_history_size() override;
+  virtual std::vector<std::string> runtime_history_messages() override;
   virtual void debug(const std::string &tag, const std::string &message) override;
   virtual void info(const std::string &tag, const std::string &message) override;
   virtual void err(const std::string &tag, const std::string &message) override;
   virtual void throw_err(const std::string &tag, const std::string &message) override;
   virtual void warn(const std::string &tag, const std::string &message) override;
   virtual void ok(const std::string &tag, const std::string &message) override;
-  virtual std::vector<std::string> last_log_messages() override;
 
 private:
   void do_log_rotate_update_filename(bool force = false);
@@ -186,9 +188,10 @@ private:
   std::string m_log_file_fullpath;
   bool m_enable_log_file;
   bool m_enable_console_output;
+  int m_runtime_history_size;
   long m_log_start_time;
   int m_rotation_period_in_seconds;
-  std::deque<std::string> m_log_last_messages;
+  std::deque<std::string> m_runtime_history_messages;
 };
 
 private_logger_impl::private_logger_impl() {
@@ -199,9 +202,11 @@ private_logger_impl::private_logger_impl() {
   m_enable_console_output = true;
   m_log_start_time = 0;
   m_rotation_period_in_seconds = 86400; // 24h
+  m_runtime_history_size = 0;
 }
 
 void private_logger_impl::set_log_dirpath(const std::string &log_dir) {
+  std::lock_guard<std::mutex> lock(m_mutex);
   m_log_dir = log_dir;
   if (m_enable_log_file) {
     if (!_dir_exists(m_log_dir)) {
@@ -218,6 +223,7 @@ const std::string &private_logger_impl::get_log_dirpath() {
 }
 
 void private_logger_impl::set_log_filename_prefix(const std::string &prefix) {
+  std::lock_guard<std::mutex> lock(m_mutex);
   m_log_file_name_prefix = prefix;
   do_log_rotate_update_filename(true);
 }
@@ -230,11 +236,12 @@ void private_logger_impl::set_rotation_period_in_seconds(int val_in_seconds) {
   m_rotation_period_in_seconds = val_in_seconds;
 }
 
-int private_logger_impl::get_rotation_period_in_seconds() {
+int private_logger_impl::rotation_period_in_seconds() {
   return m_rotation_period_in_seconds;
 }
 
 void private_logger_impl::set_enable_log_file(bool val) {
+  std::lock_guard<std::mutex> lock(m_mutex);
   m_enable_log_file = val;
   // make a log dir
   if (m_enable_log_file) {
@@ -257,6 +264,23 @@ void private_logger_impl::set_enable_console_output(bool val) {
 
 bool private_logger_impl::enable_console_output() {
   return m_enable_console_output;
+}
+
+void private_logger_impl::set_runtime_history_size(int val) {
+  m_runtime_history_size = val;
+}
+
+int private_logger_impl::runtime_history_size() {
+  return m_runtime_history_size;
+}
+
+std::vector<std::string> private_logger_impl::runtime_history_messages() {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  std::vector<std::string> ret;
+  for (int i = 0; i < m_runtime_history_messages.size(); i++) {
+    ret.push_back(m_runtime_history_messages[i]);
+  }
+  return ret;
 }
 
 void private_logger_impl::debug(const std::string &tag, const std::string &message) {
@@ -284,15 +308,6 @@ void private_logger_impl::ok(const std::string &tag, const std::string &message)
   add(COLOR_GREEN, "OK", tag, message);
 }
 
-std::vector<std::string> private_logger_impl::last_log_messages() {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  std::vector<std::string> ret;
-  for (int i = 0; i < m_log_last_messages.size(); i++) {
-    ret.push_back(m_log_last_messages[i]);
-  }
-  return ret;
-};
-
 void private_logger_impl::do_log_rotate_update_filename(bool force) {
   long t_now_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
   long rotate_diff = t_now_seconds - m_log_start_time;
@@ -312,10 +327,12 @@ void private_logger_impl::add(color_modifier &clr, const std::string &type, cons
   if (m_enable_console_output) {
     std::cout << clr << log_message << COLOR_DEFAULT << std::endl;
   }
- 
-  m_log_last_messages.push_front(log_message);
-  while (m_log_last_messages.size() > 50) {
-    m_log_last_messages.pop_back();
+  
+  if (m_runtime_history_size > 0) {
+    m_runtime_history_messages.push_front(log_message);
+    while (m_runtime_history_messages.size() > m_runtime_history_size) {
+      m_runtime_history_messages.pop_back();
+    }
   }
   if (m_enable_log_file) {
     std::ofstream log_file(m_log_file_fullpath, std::ios::app);
@@ -358,10 +375,6 @@ void log::ok(const std::string &tag, const std::string &message) {
   log::g_GLOBAL->ok(tag, message);
 }
 
-std::vector<std::string> log::last_log_messages() {
-  return log::g_GLOBAL->last_log_messages();
-}
-
 void log::set_log_dirpath(const std::string &log_dir) {
   log::g_GLOBAL->set_log_dirpath(log_dir);
 }
@@ -382,8 +395,20 @@ void log::set_rotation_period_in_seconds(int val_in_seconds) {
   log::g_GLOBAL->set_rotation_period_in_seconds(val_in_seconds);
 }
 
-int log::get_rotation_period_in_seconds() {
-  return log::g_GLOBAL->get_rotation_period_in_seconds();
+int log::rotation_period_in_seconds() {
+  return log::g_GLOBAL->rotation_period_in_seconds();
+}
+
+void log::set_runtime_history_size(int val) {
+  log::g_GLOBAL->set_runtime_history_size(val);
+}
+
+int log::runtime_history_size() {
+  return log::g_GLOBAL->runtime_history_size();
+}
+
+std::vector<std::string> log::runtime_history_messages() {
+  return log::g_GLOBAL->runtime_history_messages();
 }
 
 } // namespace sea5kg
