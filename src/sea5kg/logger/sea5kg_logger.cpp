@@ -152,10 +152,8 @@ public:
   virtual int rotation_period_in_seconds() override;
   virtual void set_log_level_file_output(log_level val) override;
   virtual log_level log_level_file_output() override;
-  virtual void set_enable_console_output(bool val) override;
   virtual void set_log_level_console_output(log_level val) override;
   virtual log_level log_level_console_output() override;
-  virtual bool enable_console_output() override;
   virtual void set_log_level_redirect_to_global(log_level val) override;
   virtual log_level log_level_redirect_to_global() override;
   virtual void set_runtime_history_size(int val) override;
@@ -180,7 +178,6 @@ private:
   std::string m_log_file_name_prefix;
   std::string m_log_file_fullpath;
   log_level m_log_level_file_output;
-  bool m_enable_console_output;
   log_level m_log_level_console_output;
   log_level m_log_level_redirect_to_global;
   int m_runtime_history_size;
@@ -194,7 +191,6 @@ private_logger_impl::private_logger_impl() {
   m_log_file_name_prefix = "";
   m_log_file_fullpath = "";
   m_log_level_file_output = log_level::DISABLE;
-  m_enable_console_output = true;
   m_log_level_console_output = log_level::DEBUG;
   m_log_level_redirect_to_global = log_level::DISABLE;
   m_log_start_time = 0;
@@ -243,16 +239,6 @@ void private_logger_impl::set_log_level_file_output(log_level val) {
 log_level private_logger_impl::log_level_file_output() {
   std::lock_guard<std::mutex> lock(m_mutex);
   return m_log_level_file_output;
-}
-
-void private_logger_impl::set_enable_console_output(bool val) {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  m_enable_console_output = val;
-}
-
-bool private_logger_impl::enable_console_output() {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  return m_enable_console_output;
 }
 
 void private_logger_impl::set_log_level_console_output(log_level val) {
@@ -435,7 +421,7 @@ void private_logger_impl::add(log_level lvl, const std::string &tag, const std::
   do_log_rotate_update_filename(lvl);
 
   std::string log_message;
-  if (m_enable_console_output && lvl >= m_log_level_console_output) {
+  if (lvl >= m_log_level_console_output) {
     init_log_message(log_message, lvl, tag, message);
     std::cout << log_level_to_color_modifier(lvl) << log_message << COLOR_DEFAULT << std::endl;
   }

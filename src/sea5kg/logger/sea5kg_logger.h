@@ -61,8 +61,6 @@ public:
   virtual int rotation_period_in_seconds() = 0;
   virtual void set_log_level_file_output(log_level val) = 0;
   virtual log_level log_level_file_output() = 0;
-  virtual void set_enable_console_output(bool val) = 0;
-  virtual bool enable_console_output() = 0;
   virtual void set_log_level_console_output(log_level val) = 0;
   virtual log_level log_level_console_output() = 0;
   virtual void set_log_level_redirect_to_global(log_level val) = 0;
