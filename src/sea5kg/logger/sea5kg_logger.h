@@ -73,13 +73,9 @@ public:
   virtual std::vector<std::string> runtime_history_messages() = 0;
   virtual void debug(const std::string &tag, const std::string &message) = 0;
   virtual void info(const std::string &tag, const std::string &message) = 0;
-  virtual void ok(const std::string &tag, const std::string &message) = 0; // deprecated
   virtual void success(const std::string &tag, const std::string &message) = 0;
-  virtual void warn(const std::string &tag, const std::string &message) = 0; // deprecated
   virtual void warning(const std::string &tag, const std::string &message) = 0;
-  virtual void err(const std::string &tag, const std::string &message) = 0; // deprecated
   virtual void error(const std::string &tag, const std::string &message) = 0;
-  virtual void throw_err(const std::string &tag, const std::string &message) = 0; // deprecated
   virtual void critical(const std::string &tag, const std::string &message) = 0;
 };
 
@@ -102,13 +98,9 @@ public:
   static std::vector<std::string> runtime_history_messages();
   static void debug(const std::string &tag, const std::string &message);
   static void info(const std::string &tag, const std::string &message);
-  static void ok(const std::string &tag, const std::string &message); // deprecated
   static void success(const std::string &tag, const std::string &message);
-  static void warn(const std::string &tag, const std::string &message); // deprecated
   static void warning(const std::string &tag, const std::string &message);
-  static void err(const std::string &tag, const std::string &message); // deprecated
   static void error(const std::string &tag, const std::string &message);
-  static void throw_err(const std::string &tag, const std::string &message); // deprecated
   static void critical(const std::string &tag, const std::string &message);
 };
 

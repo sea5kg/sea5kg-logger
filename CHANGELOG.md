@@ -6,6 +6,7 @@
 - Renamed method 'get_log_file_fullpath' to just 'log_file_fullpath'
 - Implemented formatted by time log_dir
 - Implemented log_level's
+- Removed methods ok, err, warn, throw_err
 
 ## [v2.0.0] - 2026-06-16 (2026 June 16)
 

@@ -151,13 +151,9 @@ public:
   virtual std::vector<std::string> runtime_history_messages() override;
   virtual void debug(const std::string &tag, const std::string &message) override;
   virtual void info(const std::string &tag, const std::string &message) override;
-  virtual void ok(const std::string &tag, const std::string &message) override; // deprecated
   virtual void success(const std::string &tag, const std::string &message) override;
-  virtual void warn(const std::string &tag, const std::string &message) override; // deprecated
   virtual void warning(const std::string &tag, const std::string &message) override;
-  virtual void err(const std::string &tag, const std::string &message) override; // deprecated
   virtual void error(const std::string &tag, const std::string &message) override;
-  virtual void throw_err(const std::string &tag, const std::string &message) override; // deprecated
   virtual void critical(const std::string &tag, const std::string &message) override;
 
 private:
@@ -293,33 +289,16 @@ void private_logger_impl::info(const std::string &tag, const std::string &messag
   add(COLOR_DEFAULT, log_level::INFO, tag, message);
 }
 
-void private_logger_impl::ok(const std::string &tag, const std::string &message) {
-  add(COLOR_GREEN, log_level::SUCCESS, tag, message);
-}
-
 void private_logger_impl::success(const std::string &tag, const std::string &message) {
   add(COLOR_GREEN, log_level::SUCCESS, tag, message);
-}
-
-void private_logger_impl::warn(const std::string &tag, const std::string &message) {
-  add(COLOR_YELLOW, log_level::WARNING, tag, message);
 }
 
 void private_logger_impl::warning(const std::string &tag, const std::string &message) {
   add(COLOR_YELLOW, log_level::WARNING, tag, message);
 }
 
-void private_logger_impl::err(const std::string &tag, const std::string &message) {
-  add(COLOR_RED, log_level::ERROR, tag, message);
-}
-
 void private_logger_impl::error(const std::string &tag, const std::string &message) {
   add(COLOR_RED, log_level::ERROR, tag, message);
-}
-
-void private_logger_impl::throw_err(const std::string &tag, const std::string &message) { // deprecated
-  add(COLOR_RED, log_level::CRITICAL, tag, message);
-  throw std::runtime_error(message);
 }
 
 void private_logger_impl::critical(const std::string &tag, const std::string &message) {
@@ -533,32 +512,16 @@ void log::info(const std::string &tag, const std::string &message) {
   log::g_GLOBAL->info(tag, message);
 }
 
-void log::ok(const std::string &tag, const std::string &message) {
-  log::g_GLOBAL->success(tag, message);
-}
-
 void log::success(const std::string &tag, const std::string &message) {
   log::g_GLOBAL->success(tag, message);
-}
-
-void log::warn(const std::string & tag, const std::string &message) {
-  log::g_GLOBAL->warning(tag, message);
 }
 
 void log::warning(const std::string & tag, const std::string &message) {
   log::g_GLOBAL->warning(tag, message);
 }
 
-void log::err(const std::string &tag, const std::string &message) {
-  log::g_GLOBAL->err(tag, message);
-}
-
 void log::error(const std::string &tag, const std::string &message) {
   log::g_GLOBAL->error(tag, message);
-}
-
-void log::throw_err(const std::string &tag, const std::string &message) {
-  log::g_GLOBAL->critical(tag, message);
 }
 
 void log::critical(const std::string &tag, const std::string &message) {
