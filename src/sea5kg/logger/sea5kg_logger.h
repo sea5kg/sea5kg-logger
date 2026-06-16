@@ -40,6 +40,16 @@
 
 namespace sea5kg {
 
+enum class log_level {
+  DEBUG = 0,
+  INFO = 10,
+  SUCCESS = 20,
+  WARNING = 30,
+  ERROR = 40,
+  CRITICAL = 50,
+  SILENT = 60,
+};
+
 class logger {
 public:
   static logger *create();
@@ -50,38 +60,56 @@ public:
   virtual void set_rotation_period_in_seconds(int val_in_seconds) = 0;
   virtual int rotation_period_in_seconds() = 0;
   virtual void set_enable_log_file(bool val) = 0;
+  // virtual void set_redirect_to_global_log(log_level val) = 0;
   virtual bool enable_log_file() = 0;
+  virtual void set_log_level_file_output(log_level val) = 0;
+  virtual log_level log_level_file_output() = 0;
   virtual void set_enable_console_output(bool val) = 0;
   virtual bool enable_console_output() = 0;
+  virtual void set_log_level_console_output(log_level val) = 0;
+  virtual log_level log_level_console_output() = 0;
   virtual void set_runtime_history_size(int val) = 0;
   virtual int runtime_history_size() = 0;
   virtual std::vector<std::string> runtime_history_messages() = 0;
   virtual void debug(const std::string &tag, const std::string &message) = 0;
   virtual void info(const std::string &tag, const std::string &message) = 0;
-  virtual void err(const std::string &tag, const std::string &message) = 0;
-  virtual void throw_err(const std::string &tag, const std::string &message) = 0;
-  virtual void warn(const std::string &tag, const std::string &message) = 0;
-  virtual void ok(const std::string &tag, const std::string &message) = 0;
+  virtual void ok(const std::string &tag, const std::string &message) = 0; // deprecated
+  virtual void success(const std::string &tag, const std::string &message) = 0;
+  virtual void warn(const std::string &tag, const std::string &message) = 0; // deprecated
+  virtual void warning(const std::string &tag, const std::string &message) = 0;
+  virtual void err(const std::string &tag, const std::string &message) = 0; // deprecated
+  virtual void error(const std::string &tag, const std::string &message) = 0;
+  virtual void throw_err(const std::string &tag, const std::string &message) = 0; // deprecated
+  virtual void critical(const std::string &tag, const std::string &message) = 0;
 };
 
 class log {
 public:
   static sea5kg::logger *g_GLOBAL;
-  static void debug(const std::string &tag, const std::string &message);
-  static void info(const std::string &tag, const std::string &message);
-  static void err(const std::string &tag, const std::string &message);
-  static void throw_err(const std::string &tag, const std::string &message);
-  static void warn(const std::string &tag, const std::string &message);
-  static void ok(const std::string &tag, const std::string &message);
   static void set_log_dirpath(const std::string &dirpath);
   static const std::string &log_dirpath();
   static void set_log_filename_prefix(const std::string &prefix);
   static void set_enable_log_file(bool val);
+  static bool enable_log_file();
+  static void set_log_level_file_output(log_level val);
+  static log_level log_level_file_output();
+  static void set_log_level_console_output(log_level val);
+  static log_level log_level_console_output();
   static void set_rotation_period_in_seconds(int val_in_seconds);
   static int rotation_period_in_seconds();
   static void set_runtime_history_size(int val);
   static int runtime_history_size();
   static std::vector<std::string> runtime_history_messages();
+  static void debug(const std::string &tag, const std::string &message);
+  static void info(const std::string &tag, const std::string &message);
+  static void ok(const std::string &tag, const std::string &message); // deprecated
+  static void success(const std::string &tag, const std::string &message);
+  static void warn(const std::string &tag, const std::string &message); // deprecated
+  static void warning(const std::string &tag, const std::string &message);
+  static void err(const std::string &tag, const std::string &message); // deprecated
+  static void error(const std::string &tag, const std::string &message);
+  static void throw_err(const std::string &tag, const std::string &message); // deprecated
+  static void critical(const std::string &tag, const std::string &message);
 };
 
 } // namespace sea5kg

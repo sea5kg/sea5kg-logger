@@ -140,29 +140,39 @@ public:
   virtual int rotation_period_in_seconds() override;
   virtual void set_enable_log_file(bool val) override;
   virtual bool enable_log_file() override;
+  virtual void set_log_level_file_output(log_level val) override;
+  virtual log_level log_level_file_output() override;
   virtual void set_enable_console_output(bool val) override;
+  virtual void set_log_level_console_output(log_level val) override;
+  virtual log_level log_level_console_output() override;
   virtual bool enable_console_output() override;
   virtual void set_runtime_history_size(int val) override;
   virtual int runtime_history_size() override;
   virtual std::vector<std::string> runtime_history_messages() override;
   virtual void debug(const std::string &tag, const std::string &message) override;
   virtual void info(const std::string &tag, const std::string &message) override;
-  virtual void err(const std::string &tag, const std::string &message) override;
-  virtual void throw_err(const std::string &tag, const std::string &message) override;
-  virtual void warn(const std::string &tag, const std::string &message) override;
-  virtual void ok(const std::string &tag, const std::string &message) override;
+  virtual void ok(const std::string &tag, const std::string &message) override; // deprecated
+  virtual void success(const std::string &tag, const std::string &message) override;
+  virtual void warn(const std::string &tag, const std::string &message) override; // deprecated
+  virtual void warning(const std::string &tag, const std::string &message) override;
+  virtual void err(const std::string &tag, const std::string &message) override; // deprecated
+  virtual void error(const std::string &tag, const std::string &message) override;
+  virtual void throw_err(const std::string &tag, const std::string &message) override; // deprecated
+  virtual void critical(const std::string &tag, const std::string &message) override;
 
 private:
   void do_log_rotate_update_filename(bool force = false);
   std::string prepare_log_dir(const std::string &log_dir, int t_now_seconds);
-  void add(color_modifier &clr, const std::string &type, const std::string &tag, const std::string &message);
+  void add(color_modifier &clr, log_level log_level, const std::string &tag, const std::string &message);
 
   std::mutex m_mutex;
   std::string m_log_dir;
   std::string m_log_file_name_prefix;
   std::string m_log_file_fullpath;
   bool m_enable_log_file;
+  log_level m_log_level_file_output;
   bool m_enable_console_output;
+  log_level m_log_level_console_output;
   int m_runtime_history_size;
   long m_log_start_time;
   int m_rotation_period_in_seconds;
@@ -174,7 +184,9 @@ private_logger_impl::private_logger_impl() {
   m_log_file_name_prefix = "";
   m_log_file_fullpath = "";
   m_enable_log_file = false;
+  m_log_level_file_output = log_level::DEBUG;
   m_enable_console_output = true;
+  m_log_level_console_output = log_level::DEBUG;
   m_log_start_time = 0;
   m_rotation_period_in_seconds = 86400; // 24h
   m_runtime_history_size = 0;
@@ -187,6 +199,7 @@ void private_logger_impl::set_log_dirpath(const std::string &log_dir) {
 }
 
 const std::string &private_logger_impl::log_dirpath() {
+  std::lock_guard<std::mutex> lock(m_mutex);
   return m_log_dir;
 }
 
@@ -197,14 +210,17 @@ void private_logger_impl::set_log_filename_prefix(const std::string &prefix) {
 }
 
 const std::string &private_logger_impl::log_file_fullpath() {
+  std::lock_guard<std::mutex> lock(m_mutex);
   return m_log_file_fullpath;
 }
 
 void private_logger_impl::set_rotation_period_in_seconds(int val_in_seconds) {
+  std::lock_guard<std::mutex> lock(m_mutex);
   m_rotation_period_in_seconds = val_in_seconds;
 }
 
 int private_logger_impl::rotation_period_in_seconds() {
+  std::lock_guard<std::mutex> lock(m_mutex);
   return m_rotation_period_in_seconds;
 }
 
@@ -215,22 +231,48 @@ void private_logger_impl::set_enable_log_file(bool val) {
 }
 
 bool private_logger_impl::enable_log_file() {
+  std::lock_guard<std::mutex> lock(m_mutex);
   return m_enable_log_file;
 }
 
+void private_logger_impl::set_log_level_file_output(log_level val) {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  m_log_level_file_output = val;
+}
+
+log_level private_logger_impl::log_level_file_output() {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  return m_log_level_file_output;
+}
+
 void private_logger_impl::set_enable_console_output(bool val) {
+  std::lock_guard<std::mutex> lock(m_mutex);
   m_enable_console_output = val;
 }
 
 bool private_logger_impl::enable_console_output() {
+  std::lock_guard<std::mutex> lock(m_mutex);
   return m_enable_console_output;
 }
 
+void private_logger_impl::set_log_level_console_output(log_level val) {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  m_log_level_console_output = val;
+}
+
+log_level private_logger_impl::log_level_console_output() {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  return m_log_level_console_output;
+}
+
+
 void private_logger_impl::set_runtime_history_size(int val) {
+  std::lock_guard<std::mutex> lock(m_mutex);
   m_runtime_history_size = val;
 }
 
 int private_logger_impl::runtime_history_size() {
+  std::lock_guard<std::mutex> lock(m_mutex);
   return m_runtime_history_size;
 }
 
@@ -244,28 +286,45 @@ std::vector<std::string> private_logger_impl::runtime_history_messages() {
 }
 
 void private_logger_impl::debug(const std::string &tag, const std::string &message) {
-  add(COLOR_GRAY, "DEBUG", tag, message);
+  add(COLOR_GRAY, log_level::DEBUG, tag, message);
 }
 
 void private_logger_impl::info(const std::string &tag, const std::string &message) {
-  add(COLOR_DEFAULT, "INFO", tag, message);
-}
-
-void private_logger_impl::err(const std::string &tag, const std::string &message) {
-  add(COLOR_RED, "ERR", tag, message);
-}
-
-void private_logger_impl::throw_err(const std::string &tag, const std::string &message) {
-  add(COLOR_RED, "ERR", tag, message);
-  throw std::runtime_error(message);
-}
-
-void private_logger_impl::warn(const std::string &tag, const std::string &message) {
-  add(COLOR_YELLOW, "WARN",tag, message);
+  add(COLOR_DEFAULT, log_level::INFO, tag, message);
 }
 
 void private_logger_impl::ok(const std::string &tag, const std::string &message) {
-  add(COLOR_GREEN, "OK", tag, message);
+  add(COLOR_GREEN, log_level::SUCCESS, tag, message);
+}
+
+void private_logger_impl::success(const std::string &tag, const std::string &message) {
+  add(COLOR_GREEN, log_level::SUCCESS, tag, message);
+}
+
+void private_logger_impl::warn(const std::string &tag, const std::string &message) {
+  add(COLOR_YELLOW, log_level::WARNING, tag, message);
+}
+
+void private_logger_impl::warning(const std::string &tag, const std::string &message) {
+  add(COLOR_YELLOW, log_level::WARNING, tag, message);
+}
+
+void private_logger_impl::err(const std::string &tag, const std::string &message) {
+  add(COLOR_RED, log_level::ERROR, tag, message);
+}
+
+void private_logger_impl::error(const std::string &tag, const std::string &message) {
+  add(COLOR_RED, log_level::ERROR, tag, message);
+}
+
+void private_logger_impl::throw_err(const std::string &tag, const std::string &message) { // deprecated
+  add(COLOR_RED, log_level::CRITICAL, tag, message);
+  throw std::runtime_error(message);
+}
+
+void private_logger_impl::critical(const std::string &tag, const std::string &message) {
+  add(COLOR_RED, log_level::CRITICAL, tag, message);
+  throw std::runtime_error(message);
 }
 
 void private_logger_impl::do_log_rotate_update_filename(bool force) {
@@ -346,29 +405,60 @@ std::string private_logger_impl::prepare_log_dir(const std::string &log_dir, int
   return log_dir_formatted;
 }
 
-void private_logger_impl::add(color_modifier &clr, const std::string &type, const std::string &tag, const std::string &message) {
+void private_logger_impl::add(color_modifier &clr, log_level lvl, const std::string &tag, const std::string &message) {
   std::lock_guard<std::mutex> lock(m_mutex);
   do_log_rotate_update_filename();
+  std::string type = " [?] ";
+  switch (lvl) {
+    case log_level::DEBUG:
+      type = " [DEBUG] ";
+      break;
+    case log_level::INFO:
+      type = " [INFO] ";
+      break;
+    case log_level::SUCCESS:
+      type = " [SUCCESS] ";
+      break;
+    case log_level::WARNING:
+      type = " [WARNING] ";
+      break;
+    case log_level::ERROR:
+      type = " [ERROR] ";
+      break;
+    case log_level::CRITICAL:
+      type = " [CRITICAL] ";
+      break;
+  }
 
-  std::string log_message = _current_time_for_log_format() + ", " + _get_thread_id() + " [" + type + "] " + tag + ": " + message;
-  if (m_enable_console_output) {
+  std::string log_message;
+  if (m_enable_console_output && lvl >= m_log_level_console_output) {
+    if (log_message.empty()) {
+      log_message = _current_time_for_log_format() + ", " + _get_thread_id() + type + tag + ": " + message;
+    }
     std::cout << clr << log_message << COLOR_DEFAULT << std::endl;
   }
   
+  if (m_enable_log_file && lvl >= m_log_level_file_output) {
+    std::ofstream log_file(m_log_file_fullpath, std::ios::app);
+    if (!log_file) {
+      std::cerr << "Error Opening File '" << m_log_file_fullpath << "'" << std::endl;
+      return;
+    }
+    if (log_message.empty()) {
+      log_message = _current_time_for_log_format() + ", " + _get_thread_id() + type + tag + ": " + message;
+    }
+    log_file << log_message << std::endl;
+    log_file.close();
+  }
+
   if (m_runtime_history_size > 0) {
+    if (log_message.empty()) {
+      log_message = _current_time_for_log_format() + ", " + _get_thread_id() + type + tag + ": " + message;
+    }
     m_runtime_history_messages.push_front(log_message);
     while (m_runtime_history_messages.size() > m_runtime_history_size) {
       m_runtime_history_messages.pop_back();
     }
-  }
-  if (m_enable_log_file) {
-    std::ofstream log_file(m_log_file_fullpath, std::ios::app);
-    if (!log_file) {
-      std::cout << "Error Opening File" << std::endl;
-      return;
-    }
-    log_file << log_message << std::endl;
-    log_file.close();
   }
 }
 
@@ -377,30 +467,6 @@ logger *logger::create() {
 }
 
 logger *log::g_GLOBAL = logger::create();
-
-void log::debug(const std::string &tag, const std::string &message) {
-  log::g_GLOBAL->debug(tag, message);
-}
-
-void log::info(const std::string &tag, const std::string &message) {
-  log::g_GLOBAL->info(tag, message);
-}
-
-void log::err(const std::string &tag, const std::string &message) {
-  log::g_GLOBAL->err(tag, message);
-}
-
-void log::throw_err(const std::string &tag, const std::string &message) {
-  log::g_GLOBAL->throw_err(tag, message);
-}
-
-void log::warn(const std::string & tag, const std::string &message) {
-  log::g_GLOBAL->warn(tag, message);
-}
-
-void log::ok(const std::string &tag, const std::string &message) {
-  log::g_GLOBAL->ok(tag, message);
-}
 
 void log::set_log_dirpath(const std::string &log_dir) {
   log::g_GLOBAL->set_log_dirpath(log_dir);
@@ -416,6 +482,26 @@ void log::set_log_filename_prefix(const std::string &prefix) {
 
 void log::set_enable_log_file(bool val) {
   log::g_GLOBAL->set_enable_log_file(val);
+}
+
+bool log::enable_log_file() {
+  return log::g_GLOBAL->enable_log_file();
+}
+
+void log::set_log_level_file_output(log_level val) {
+  log::g_GLOBAL->set_log_level_file_output(val);
+}
+
+log_level log::log_level_file_output() {
+  return log::g_GLOBAL->log_level_file_output();
+}
+
+void log::set_log_level_console_output(log_level val) {
+  log::g_GLOBAL->set_log_level_console_output(val);
+}
+
+log_level log::log_level_console_output() {
+  return log::g_GLOBAL->log_level_console_output();
 }
 
 void log::set_rotation_period_in_seconds(int val_in_seconds) {
@@ -436,6 +522,47 @@ int log::runtime_history_size() {
 
 std::vector<std::string> log::runtime_history_messages() {
   return log::g_GLOBAL->runtime_history_messages();
+}
+
+
+void log::debug(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->debug(tag, message);
+}
+
+void log::info(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->info(tag, message);
+}
+
+void log::ok(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->success(tag, message);
+}
+
+void log::success(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->success(tag, message);
+}
+
+void log::warn(const std::string & tag, const std::string &message) {
+  log::g_GLOBAL->warning(tag, message);
+}
+
+void log::warning(const std::string & tag, const std::string &message) {
+  log::g_GLOBAL->warning(tag, message);
+}
+
+void log::err(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->err(tag, message);
+}
+
+void log::error(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->error(tag, message);
+}
+
+void log::throw_err(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->critical(tag, message);
+}
+
+void log::critical(const std::string &tag, const std::string &message) {
+  log::g_GLOBAL->critical(tag, message);
 }
 
 } // namespace sea5kg

@@ -35,25 +35,35 @@ To init logger first and enable.
 #include <sea5kg_logger.h>
 
 int main(int argc, char* argv[]) {
-  std::string TAG = "MAIN";
+  const std::string TAG = "MAIN";
   sea5kg::log::set_rotation_period_in_seconds(60*5); // every 5 minutes
+  sea5kg::log::set_log_level_console_output(sea5kg::log_level::INFO);
   sea5kg::log::set_log_dirpath(".logs/%Y/%m/%d");
   sea5kg::log::set_log_filename_prefix("main_");
   sea5kg::log::set_enable_log_file(true);
+  sea5kg::log::set_runtime_history_size(50);
   sea5kg::log::debug(TAG, "Hello info");
   sea5kg::log::info(TAG, "Hello info");
-  sea5kg::log::err(TAG, "Hello err");
-  sea5kg::log::warn(TAG, "Hello warn");
-  sea5kg::log::ok(TAG, "Hello ok");
+  sea5kg::log::success(TAG, "Hello ok");
+  sea5kg::log::error(TAG, "Hello err");
+  sea5kg::log::warning(TAG, "Hello warn");
   return 0;
 }
 ```
 
-Example output
+Example console output:
 ```
-2026-04-22 14:40:07.395, 0x00007aa3e8c98740 [DEBUG] MAIN: Hello info
-2026-04-22 14:40:07.395, 0x00007aa3e8c98740 [INFO] MAIN: Hello info
-2026-04-22 14:40:07.396, 0x00007aa3e8c98740 [ERR] MAIN: Hello err
-2026-04-22 14:40:07.396, 0x00007aa3e8c98740 [WARN] MAIN: Hello warn
-2026-04-22 14:40:07.396, 0x00007aa3e8c98740 [OK] MAIN: Hello ok
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [INFO] MAIN: Hello info
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [SUCCESS] MAIN: Hello ok
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [ERROR] MAIN: Hello err
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [WARNING] MAIN: Hello warn
+```
+
+Example file output:
+```
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [DEBUG] MAIN: Hello info
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [INFO] MAIN: Hello info
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [SUCCESS] MAIN: Hello ok
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [ERROR] MAIN: Hello err
+2026-06-16 12:58:56.634, 0x00007b1d23e94740 [WARNING] MAIN: Hello warn
 ```
